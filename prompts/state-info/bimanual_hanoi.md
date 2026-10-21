@@ -11,13 +11,23 @@ at 223f1a8 (re-check line numbers at CODE_COMMIT).
 
 ```
 TASK          = bimanual_hanoi
-ARM           = A   # Arm A: object state + success info (branch exp/add-state-info/object), no lookahead
+ARM           = A   # A (default): object state + success info (exp/add-state-info/object), no lookahead; B: + dexjoco_lookahead (COMMON 1c)
 ROOT          = /data/user_data/vawale/rax_state/bimanual_hanoi_A
 CODE_COMMIT   = 943da37cb1c1fb4d71f62585b66beaf0d9fe144d   # 223f1a8 (Arm A, GPU smoke passed: job 10880424) + my auth opt-in
 CODE_WORKTREE = ~/my_things/codes/rax/.worktrees/add-state-info   # existing worktree, frozen for this run (P1.1)
 REUSE_ENVS    = /data/user_data/vawale/rax_repro_v2/runtime/envs
 GPU_JOB       = <optional: running katef GPU job id; empty = submit new jobs (COMMON P1.4, P2.5)>
 ```
+
+For `ARM = B` (COMMON section 1c), three settings change (keep the values above for the A
+run): `ROOT = /data/user_data/vawale/rax_state/bimanual_hanoi_B`,
+`CODE_WORKTREE = ~/my_things/codes/rax/.worktrees/state-run-bimanual_hanoi-B` (a new detached worktree,
+not `add-state-info`), and `CODE_COMMIT` from `exp/add-state-info/lookahead` ("<fill in after GPU
+acceptance passes>"). Job scripts also export `RAX_LOOKAHEAD=on RAX_LOOKAHEAD_ROWS_FACTOR=3`. Add gates
+G1c and G6, and the extra P5 lookahead fields. The row budget is 3 x 1500 = 4500 rows per episode. The
+summary line gets the lookahead use and formal wall time vs Arm A (`bimanual_hanoi_A`), plus the 1c report
+wording. Hanoi only: a lookahead that makes an illegal move stops with `stop_reason: "illegal_move"`. The
+real episode is not affected. Count these stops per episode. Everything else in this file is unchanged.
 
 ## B. Task facts
 

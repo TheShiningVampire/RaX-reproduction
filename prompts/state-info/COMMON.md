@@ -63,9 +63,10 @@ personal Claude subscription, the same limits as you and your subagents.
 
 ```
 TASK          = <one of the 5 task ids>
-ROOT          = /data/user_data/vawale/rax_state/<TASK>      # runtime, logs, results, notes, report
-CODE_COMMIT   = <fill in after GPU smoke passes>   # I fill this in (full hash on exp/add-state-info/object)
-CODE_WORKTREE = ~/my_things/codes/rax/.worktrees/state-run-<TASK>   # detached at CODE_COMMIT, see P1
+ARM           = A | B    # A (default): object state only; B: object state + dexjoco_lookahead (section 1c)
+ROOT          = /data/user_data/vawale/rax_state/<TASK>_<ARM>   # runtime, logs, results, notes, report
+CODE_COMMIT   = <fill in after GPU smoke passes>   # I fill this in (Arm A: full hash on exp/add-state-info/object; Arm B: see 1c)
+CODE_WORKTREE = ~/my_things/codes/rax/.worktrees/state-run-<TASK>[-B]   # detached at CODE_COMMIT, see P1
 REUSE_ENVS    = /data/user_data/vawale/rax_repro_v2/runtime/envs   # host + dexjoco conda envs, read-only
 GPU_JOB       = <optional: id of a running katef GPU job to reuse; empty = submit new jobs (P1.4, P2.5)>
 ```
@@ -77,6 +78,8 @@ Fixed for all tasks (do not change): budget 8 episodes, `--agent-cli claude`,
 and `export RAX_PRIVILEGED_STATE=full` in every job script (gates and session) before any harness
 command. Record the level in STATE.md and DECISIONS.md at P0 ("privileged level: full, exported
 explicitly") and again with each launch.
+Arm B (`ARM = B`) also exports `RAX_LOOKAHEAD=on RAX_LOOKAHEAD_ROWS_FACTOR=3` and records them the same
+way (section 1c).
 
 Why a per-task worktree: the harness hard-codes `<worktree>/runtime` (scripts/configure_auto_research.py
 uses `PROJECT/'runtime'`, the launcher uses `runtime/envs/host/bin/python`). A detached worktree per task
@@ -98,6 +101,111 @@ runs. The development worktree `~/my_things/codes/rax/.worktrees/add-state-info`
   goal's condition names and their expected values at step 0.
 - **E. What to watch:** likely failure stages and task pitfalls (grasp, articulation, aiming, timing).
 - **F. Breakthrough candidates:** what moments to look for when cutting clips.
+
+### 1c. Arm B: lookahead (only when the task file sets `ARM = B`)
+
+Arm A (the default) is everything else in this file. Arm B is Arm A plus one more tool. Everything in
+this file still applies to Arm B, with the changes below. Run the arms as separate sessions, each with
+its own ROOT (`<TASK>_A`, `<TASK>_B`) and its own run worktree. One RaX agent session at a time across
+all tasks and both arms.
+Never run Arm A from the lookahead branch: there lookahead is on by default.
+
+**What Arm B adds.** The MCP tool `dexjoco_lookahead` (`services/dexjoco/lookahead.py`). It takes the
+same rows `dexjoco_step` takes (plus an optional `report_every`). It runs them from the live episode
+state on a copy of the simulator state, through the episode's own physics, controller and contacts. It
+reports `final.state` and `final.object_states` (plus `reports`). The real episode is never advanced or
+rewound. After every call an exactness check compares fingerprints taken before and after. On a
+mismatch the episode ends, invalid for scoring (`invalid_reason: lookahead_restore_mismatch`).
+- Limits per episode: rows = `RAX_LOOKAHEAD_ROWS_FACTOR` (default 3) x the task's step cap; 300 calls;
+  30 s wall time per call. Every reply carries `lookahead_budget`. A lookahead uses the episode's
+  wall clock but no episode steps.
+- It holds the same per-environment lock as the motion tools. The compiled program can call it in
+  formal evaluation via `ctx.call("dexjoco_lookahead", {...})`, exactly as in exploration.
+- Agent text: the tool's MCP description, plus a "## Lookahead" section in
+  `agent_skills/control/dexjoco/robot-interface/SKILL.md`. That section includes the rule "lookahead
+  never changes the episode; use it to compare candidate rows, then execute the chosen rows with
+  `dexjoco_step`", and says it costs wall time and budget. AGENTS.md is unchanged. With
+  `RAX_LOOKAHEAD=off` the tool refuses, and none of this text is rendered.
+
+**Parameters for B.** Branch `exp/add-state-info/lookahead` (the implementation is 798111f, 43bd0ae,
+7e87b69, 8e780f3, built on 223f1a8). `CODE_COMMIT = <fill in after GPU acceptance passes>`. I fill it
+in with the full hash of the branch tip plus my auth opt-in (2b), the way 943da37 is 223f1a8 plus the
+opt-in for Arm A. If it is still a placeholder, stop at P1 and ask me.
+`ROOT = /data/user_data/vawale/rax_state/<TASK>_B`, `CODE_WORKTREE = ~/my_things/codes/rax/.worktrees/state-run-<TASK>-B`.
+
+**Switches.** Every job script (gates and session) exports all three settings explicitly, right after
+`RAX_PRIVILEGED_STATE`, and echoes them into the log. Do not rely on defaults.
+```
+export RAX_PRIVILEGED_STATE=full RAX_LOOKAHEAD=on RAX_LOOKAHEAD_ROWS_FACTOR=3
+echo "RAX_PRIVILEGED_STATE=$RAX_PRIVILEGED_STATE RAX_LOOKAHEAD=$RAX_LOOKAHEAD RAX_LOOKAHEAD_ROWS_FACTOR=$RAX_LOOKAHEAD_ROWS_FACTOR"
+```
+Record "lookahead: on, rows factor 3, exported explicitly" in STATE.md and DECISIONS.md at P0 and
+with each launch. These variables are in `SESSION_KEPT_ENV`, so they reach the launcher frontend, the
+exploration simulators and formal evaluation. The session also records them in
+`<session>/session-env.json` at first launch. A resume or a post-hoc formal batch adopts the recorded
+values. If the shell sets a different value, the launch is refused. After launch, check that
+`session-env.json` shows `RAX_LOOKAHEAD: "on"` and record it in STATE.md.
+
+**Acceptance gate (decides CODE_COMMIT; I or the other agent run it once for all 5 tasks).** On an
+RTX PRO 6000 node (not babel-z9-16), from the run worktree, with the exports above:
+`RAX_RUNTIME_ROOT=<runtime> PYTHONPATH=. runtime/envs/host/bin/python scripts/lookahead_acceptance.py --gpu $G --out <dir>`
+(no `--task`: all 5 tasks). It must exit 0. Its `<dir>/lookahead_acceptance.json` must pass every
+check for every task: control, continuation (bit-identical state and object states for every
+following real row), prediction, unchanged (observe/object_states/step_id/operator files),
+frames, episode_end (stops with `episode_end` without ending the episode), budget, and timing per
+row (recorded; a note above 15 ms/row). Until this passes, CODE_COMMIT stays a placeholder.
+
+**Phase changes for B.**
+- P1.1 diff: the expected set is the Arm A set plus `services/dexjoco/lookahead.py`,
+  `services/controller/{session_env,batch,parallel_batch}.py`, `services/mcp_contract.py`,
+  `scripts/lookahead_acceptance.py`, `local_tests/unit/test_dexjoco_lookahead.py`,
+  `local_tests/unit/test_dexjoco_lookahead_physics.py`, `local_tests/unit/test_session_env.py`.
+  Also check `git -C WT diff --stat 223f1a8 HEAD`: only the lookahead files plus `experiment_login.py`.
+  Anything else: stop and ask me.
+- G1b adds `local_tests/unit/test_dexjoco_lookahead.py` and `local_tests/unit/test_session_env.py`.
+  At 8e780f3 the four files collect 97 tests (36 + 18 + 39 + 4). Re-count with `--collect-only`.
+  All must pass, none skipped. The non-GPU suite was `874 passed, 25 skipped` on babel-cpu at 8e780f3.
+- G1c (new) CPU physics test: `PYTHONPATH=.:R/tools/pytest_overlay runtime/envs/dexjoco/bin/python -m pytest -q -p no:cacheprovider local_tests/unit/test_dexjoco_lookahead_physics.py`.
+  The simulator env has no pytest, so `R/tools/pytest_overlay` is a directory of symlinks to the host
+  env's `pytest`, `_pytest`, `pluggy`, `iniconfig`, `pygments` packages and their `*.dist-info`, from
+  `REUSE_ENVS/host/lib/python3.12/site-packages`. Pass: "8 passed" (bit-identical continuation on
+  real single-arm and bimanual task models). The host interpreter skips this file; that is expected.
+- G3: goldens "identical" (they record the defaults, now including lookahead on). The rendered
+  robot-interface/SKILL.md (`--out`) must contain "## Lookahead" and "lookahead never changes the
+  episode", and the rendered tool list must contain `dexjoco_lookahead`.
+- G6 (new): `scripts/lookahead_acceptance.py --gpu $G --task TASK --out R/results/lookahead_acceptance`
+  inside the gates job at CODE_COMMIT. Pass: rc=0 and every check passes. Copy its timing rows into
+  STATE.md.
+- P2.2 dry deploy: the deployed SKILL.md must contain the "## Lookahead" section. If it does not, the
+  export did not reach the deploy: stop and tell me. P2.3: also grep `session.sbatch` for
+  `RAX_LOOKAHEAD=on`. P2.4: there is no usage reference for B yet. Say "Arm A reference; B may be longer".
+- P3: count `dexjoco_lookahead` calls in `mcp.jsonl` as well. At the first call, record its
+  `lookahead_budget`. Tell me at once if any of these appears: a reply saying the tool "is off in this
+  session" (the export was lost); `lookahead_restore_mismatch` in any episode's `evaluation_outcome.json`;
+  or an exploration episode that hit its wall limit.
+- P4: formal evaluation takes longer when the program looks ahead. Each formal episode's wall limit
+  still applies. Report progress as n/150 only. Record the formal wall time from start to end.
+- P5 extra fields in `R/results/TASK.json`, all from operator-side files (the agent never sees them).
+  Each episode's `summary.json` / `evaluation_outcome.json` has a `lookahead` record with `calls`,
+  `rows`, `seconds`, `rejected` and the limits.
+  - Per exploration episode and per formal episode: lookahead calls, rows and seconds. Give the
+    totals and the per-episode median/max for the formal run.
+  - The share of formal wall time spent in lookahead.
+  - Formal episodes invalidated by `lookahead_restore_mismatch` (expected 0) and formal episodes that
+    hit the wall limit.
+  - Whether the submitted `controller.py` calls `dexjoco_lookahead` (static grep), and how often per
+    formal episode (from the records).
+  - Formal-eval wall time for Arm B vs Arm A on the same task. Take A's from
+    `rax_state/<TASK>_A/results/TASK.json`; if A has not run, write "A not yet run".
+  The session note also says how the agent used lookahead: what it compared, at which decisions, and
+  whether the program uses it to search among candidate rows at run time.
+- Report wording (add to section 7's paragraph for B): "In this arm the agent could also simulate
+  candidate rows exactly from the live state before executing them (a perfect, rewindable model of
+  the simulator), and its program could do the same during evaluation. A program that does this is
+  an agent-written, simulator-based expert (planning with the true simulator), not a policy learned
+  purely from exploration. Its success rate is not comparable to a vision-only or a model-free
+  controller, and the evaluation took X h of wall time vs Y h for Arm A." Never present Arm B's
+  number as a better learned controller.
 
 ## 2. Operating rules (these override convenience)
 
@@ -427,6 +535,9 @@ Changed on purpose (the experiment):
    (no longer "find objects in the images"; cameras remain available; at `full` its "## Object state"
    section and the MCP tool description list the velocity, size, contact and goal fields) and
    `agent_skills/task/manual-robot-control/SKILL.md`.
+
+Arm B only: 3. the `dexjoco_lookahead` tool and its "## Lookahead" skill text (`RAX_LOOKAHEAD=on`);
+add section 1c's report paragraph to the one below.
 
 Changed for running only (not the experiment): my auth opt-in in `experiment_login.py` (auth only);
 Claude Code version (pinned binary, record it); no Gemini; newer bubblewrap; one session per task.

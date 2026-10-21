@@ -11,12 +11,20 @@ them into the agent's workspace yourself.
 
 ```
 TASK          = fold_glasses
-ROOT          = /data/user_data/vawale/rax_state/fold_glasses
+ARM           = A   # A (default): object state only, exp/add-state-info/object; B: + dexjoco_lookahead (COMMON 1c)
+ROOT          = /data/user_data/vawale/rax_state/fold_glasses_A
 CODE_COMMIT   = <fill in after GPU smoke passes>
 CODE_WORKTREE = ~/my_things/codes/rax/.worktrees/state-run-fold_glasses
 REUSE_ENVS    = /data/user_data/vawale/rax_repro_v2/runtime/envs
 GPU_JOB       =             # empty = submit new jobs (COMMON P1.4, P2.5)
 ```
+
+For `ARM = B` (COMMON section 1c): `ROOT = /data/user_data/vawale/rax_state/fold_glasses_B`,
+`CODE_WORKTREE = ~/my_things/codes/rax/.worktrees/state-run-fold_glasses-B`, and `CODE_COMMIT` from
+`exp/add-state-info/lookahead` ("<fill in after GPU acceptance passes>"). Job scripts also export
+`RAX_LOOKAHEAD=on RAX_LOOKAHEAD_ROWS_FACTOR=3`. Add gates G1c and G6, and the extra P5 lookahead fields.
+The lookahead row budget here is 3 x the step cap (section B). The summary line gets the lookahead
+use and formal wall time vs Arm A, plus the 1c report wording. Everything else in this file is unchanged.
 
 ## B. Task facts
 

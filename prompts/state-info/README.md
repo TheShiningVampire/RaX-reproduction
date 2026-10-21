@@ -10,6 +10,10 @@ vision-only number at budget 8. This is an extension, not a reproduction.
 
 - `COMMON.md`: the shared protocol (parameters, rules, auth, phases P0-P5, gates, lessons, reporting).
 - `<task>.md`: one file per task, with its parameters, facts, paper row and object-state checklist.
+- Two arms: `ARM = A` (default, object state only, `exp/add-state-info/object`) and `ARM = B` (object state
+  plus the exact `dexjoco_lookahead` tool, `exp/add-state-info/lookahead`; COMMON section 1c). For B, set
+  `ARM = B` in the task file, and fill in its CODE_COMMIT once `scripts/lookahead_acceptance.py` passes on a GPU for
+  all 5 tasks.
 
 Launch order (one task at a time; each needs your go-ahead before it spends usage):
 1. `water_plant`: single arm, 1000-step cap, paper @8 91.3%; shortest episodes, so the best smoke run.
