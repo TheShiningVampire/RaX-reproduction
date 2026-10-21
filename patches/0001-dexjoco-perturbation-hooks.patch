@@ -1,0 +1,92 @@
+diff --git a/services/dexjoco/session.py b/services/dexjoco/session.py
+index c6eb430..0ab9007 100644
+--- a/services/dexjoco/session.py
++++ b/services/dexjoco/session.py
+@@ -58,6 +58,62 @@ def hold_row(state, dual_arm):
+     return [float(v) for v in row]
+ 
+ 
++# Reproduction study only (not upstream RaX): RAX_PERTURB="rand_full" and/or "mass" turns on the
++# official env's visual randomization (camera viewpoint, lighting, table texture) or disk-mass
++# randomization on a nominal task. The randomized front camera is presented under its nominal key
++# ("ego"), so a program written for the nominal task sees the same interface; calibration stays
++# correct because camera ids are matched by position, not by name.
++PERTURB = set(filter(None, os.environ.get("RAX_PERTURB", "").split(",")))
++
++
++# Single-factor variants, applied right after reset with the official env's own randomizers (python `random`,
++# seeded by the env, so layouts are unchanged): "lighting", "camera", "texture". "colors_new" recolours the
++# Hanoi disks (sizes unchanged) so a program that finds disks by colour can no longer rely on it.
++NEW_DISK_COLORS = {"hanoi_disk_large_mat": (0.95, 0.55, 0.10, 1.0),   # was blue  -> orange
++                   "hanoi_disk_medium_mat": (0.15, 0.70, 0.25, 1.0),  # was red   -> green
++                   "hanoi_disk_small_mat": (0.55, 0.25, 0.75, 1.0)}   # was yellow -> purple
++
++
++def _perturb_after_reset(env, obs):
++    single = PERTURB & {"lighting", "camera", "texture", "colors_new"}
++    if not single:
++        return obs
++    import mujoco
++    raw = env.unwrapped
++    if "lighting" in single:
++        raw.randomize_lighting()
++    if "camera" in single:
++        raw.randomize_camera()
++    if "texture" in single:
++        raw.randomize_desktop_texture()
++    if "colors_new" in single:
++        for name, rgba in NEW_DISK_COLORS.items():
++            raw._model.mat_rgba[raw._model.material(name).id] = rgba
++    mujoco.mj_forward(raw._model, raw._data)
++    raw._prime_rgb_array_renderer()
++    # The wrappers hand the session a flattened observation (camera images at the top level, or under
++    # "images"); keep that structure and only swap in the re-rendered images.
++    fresh = raw._compute_observation().get("images", {})
++    out = dict(obs)
++    for key, image in fresh.items():
++        if key in out:
++            out[key] = image
++        elif isinstance(out.get("images"), dict) and key in out["images"]:
++            out["images"] = {**out["images"], key: image}
++    return out
++
++
++def _perturb_rename(obs):
++    if "rand_full" not in PERTURB or not isinstance(obs, dict):
++        return obs
++    def rename(d):
++        return {("ego" if k == "random_camera" else k): v for k, v in d.items()} if isinstance(d, dict) else d
++    obs = rename(obs)
++    if isinstance(obs.get("images"), dict):
++        obs["images"] = rename(obs["images"])
++    return obs
++
++
+ class _Tap:
+     """Pass-through around the wrapped gym env that keeps the last full observation and info.
+ 
+@@ -79,12 +135,14 @@ class _Tap:
+ 
+     def reset(self, *args, **kwargs):
+         obs, info = self._env.reset(*args, **kwargs)
++        obs = _perturb_rename(_perturb_after_reset(self._env, obs))
+         self.last_obs, self.last_info = obs, dict(info or {})
+         self.ever_true, self.sequences = set(), {}
+         return obs, info
+ 
+     def step(self, action):
+         obs, reward, terminated, truncated, info = self._env.step(action)
++        obs = _perturb_rename(obs)
+         self.last_obs, self.last_info = obs, dict(info or {})
+         for key, value in self.last_info.items():
+             if value is True or isinstance(value, np.bool_) and bool(value):
+@@ -162,7 +220,8 @@ class DexjocoSession:
+         _set_seed(seed)
+         env = DexJoCoOpenPIEnv(
+             env_name=self.info["env_name"], camera_mapping=self.config["camera_mapping"], seed=seed,
+-            rand_full=self.info["regime"] == "rand_full", randomize_dynamics=False,
++            rand_full=self.info["regime"] == "rand_full" or "rand_full" in PERTURB,
++            randomize_dynamics="mass" in PERTURB,
+             dual_arm=self.info["dual_arm"], prompt=self.config["prompt"], render_mode="rgb_array",
+             password=self.config.get("password", None))
+         env.start()

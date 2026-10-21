@@ -1,0 +1,398 @@
+<title>RaX Hanoi Reproduction</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600;700&family=IBM+Plex+Sans:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column (~70ch); the synced player, charts and tables break out to ~1120px. Same visual system as the RaX Reproduction Map. */
+:root{
+  --bg:#f5f7f8; --panel:#ffffff; --ink:#15212b; --muted:#566573; --rule:#d5dde3;
+  --accent:#0b6e79; --accent-soft:#e1f0f1;
+  --ok:#1f7a3f; --ok-bg:#e3f3e8; --part:#93600a; --part-bg:#fbf0d9; --no:#a2312a; --no-bg:#f9e3e1;
+  --info:#3b5b8c; --info-bg:#e5ebf5; --code-bg:#eef2f4;
+  --f-display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f161c; --panel:#162029; --ink:#e3e9ee; --muted:#93a3b1; --rule:#2a3843;
+  --accent:#5cc2cc; --accent-soft:#16343a;
+  --ok:#6fd08f; --ok-bg:#15301f; --part:#e5b45a; --part-bg:#352a12; --no:#f08a80; --no-bg:#3a1b19;
+  --info:#9db7e3; --info-bg:#1c2940; --code-bg:#1b2731; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f161c; --panel:#162029; --ink:#e3e9ee; --muted:#93a3b1; --rule:#2a3843;
+  --accent:#5cc2cc; --accent-soft:#16343a;
+  --ok:#6fd08f; --ok-bg:#15301f; --part:#e5b45a; --part-bg:#352a12; --no:#f08a80; --no-bg:#3a1b19;
+  --info:#9db7e3; --info-bg:#1c2940; --code-bg:#1b2731; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:16px;line-height:1.6;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:40px 80px}
+.wrap{max-width:1120px;margin:0 auto}
+.col{max-width:70ch}
+h1,h2,h3{font-family:var(--f-display);text-wrap:balance;line-height:1.15;margin:0}
+h1{font-size:clamp(2rem,5vw,2.8rem);font-weight:700;letter-spacing:-.01em}
+h2{font-size:1.65rem;font-weight:600;margin-top:64px;padding-top:20px;border-top:2px solid var(--ink)}
+h3{font-size:1.15rem;font-weight:600;margin-top:28px}
+p{margin:12px 0}
+a{color:var(--accent)}
+a:focus-visible,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.lede{font-size:1.1rem;margin-top:16px}
+:not(pre)>code{font-family:var(--f-mono);font-size:.86em;background:var(--code-bg);padding:1px 5px;border-radius:3px}
+pre{font-family:var(--f-mono);font-size:.8rem;background:var(--code-bg);padding:14px 16px;border-radius:4px;overflow-x:auto;line-height:1.5;margin:12px 0}
+.scroll{overflow-x:auto;margin:16px 0}
+table{border-collapse:collapse;width:100%;font-size:.9rem}
+th,td{text-align:left;vertical-align:top;padding:8px 10px;border-bottom:1px solid var(--rule)}
+th{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:500;border-bottom:1.5px solid var(--ink)}
+td.num,th.num{text-align:right;font-variant-numeric:tabular-nums;font-family:var(--f-mono);font-size:.82rem}
+.pill{display:inline-block;font-family:var(--f-mono);font-size:.7rem;font-weight:500;letter-spacing:.04em;text-transform:uppercase;padding:2px 7px;border-radius:3px;white-space:nowrap}
+.ok{background:var(--ok-bg);color:var(--ok)} .part{background:var(--part-bg);color:var(--part)} .no{background:var(--no-bg);color:var(--no)} .info{background:var(--info-bg);color:var(--info)}
+.note{font-size:.85rem;color:var(--muted)}
+
+/* answer cards */
+.answers{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px;margin:28px 0}
+.ans{background:var(--panel);border:1px solid var(--rule);border-top:4px solid var(--rule);padding:14px 16px;border-radius:2px;min-width:0}
+.ans.yes{border-top-color:var(--ok)} .ans.mid{border-top-color:var(--part)} .ans.wait{border-top-color:var(--info)}
+.ans .q{font-size:.85rem;color:var(--muted)}
+.ans .a{font-family:var(--f-display);font-size:1.45rem;font-weight:600;line-height:1.2;margin:4px 0 6px}
+.ans p{margin:0;font-size:.9rem}
+
+/* step timeline */
+.steps{list-style:none;padding:0;margin:20px 0;counter-reset:s}
+.steps li{counter-increment:s;display:grid;grid-template-columns:34px 1fr auto;gap:4px 14px;padding:14px 0;border-bottom:1px solid var(--rule);align-items:start}
+.steps li::before{content:counter(s);width:28px;height:28px;border-radius:50%;border:1.5px solid var(--accent);color:var(--accent);font-family:var(--f-mono);font-size:.8rem;display:flex;align-items:center;justify-content:center}
+.steps .w{font-family:var(--f-display);font-weight:600;font-size:1.05rem}
+.steps .d{font-size:.92rem;min-width:0}
+.steps .r{text-align:right;font-family:var(--f-mono);font-size:.8rem;white-space:nowrap}
+.steps .r .big{display:block;font-family:var(--f-display);font-size:1.3rem;font-weight:600;color:var(--ink)}
+@media (max-width:620px){.steps li{grid-template-columns:34px 1fr}.steps .r{grid-column:2;text-align:left}}
+
+/* score chart */
+.chart{background:var(--panel);border:1px solid var(--rule);padding:16px;border-radius:2px;margin:16px 0}
+.brow{display:grid;grid-template-columns:minmax(150px,240px) 1fr 70px;gap:12px;align-items:center;margin:8px 0}
+.brow .lab{font-size:.9rem}
+.brow .lab small{display:block;color:var(--muted);font-size:.78rem}
+.brow .track{height:22px;background:var(--code-bg);border-radius:2px;position:relative;overflow:hidden}
+.brow .fill{height:100%;border-radius:2px}
+.brow .val{font-family:var(--f-mono);font-size:.85rem;text-align:right;font-variant-numeric:tabular-nums}
+@media (max-width:560px){.brow{grid-template-columns:1fr 60px}.brow .track{grid-column:1/-1;grid-row:2}}
+
+/* synced player */
+.player{background:var(--panel);border:1px solid var(--rule);border-radius:2px;margin:18px 0;overflow:hidden}
+.tabs{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--rule)}
+.tabs button{font:inherit;font-size:.85rem;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:10px 14px;cursor:pointer;text-align:left}
+.tabs button[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent);font-weight:600}
+.tabs button small{display:block;font-size:.72rem;font-family:var(--f-mono)}
+.pbody{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(0,1fr);gap:0}
+@media (max-width:860px){.pbody{grid-template-columns:1fr}}
+.vid{padding:14px;min-width:0}
+.vid video{display:block;width:100%;height:auto;aspect-ratio:3/1;background:#000;border-radius:2px}
+.camlab{display:grid;grid-template-columns:1fr 1fr 1fr;font-family:var(--f-mono);font-size:.68rem;color:var(--muted);text-align:center;margin-top:4px}
+.dots{display:flex;flex-wrap:wrap;gap:6px;margin:12px 0 4px}
+.dots button{font:inherit;font-family:var(--f-mono);font-size:.72rem;border:1px solid var(--rule);background:var(--bg);color:var(--ink);border-radius:12px;padding:3px 10px;cursor:pointer}
+.dots button.cur{outline:2px solid var(--accent)}
+.dots .explore{border-left:4px solid var(--info)} .dots .fail{border-left:4px solid var(--no)} .dots .fix{border-left:4px solid var(--part)} .dots .success{border-left:4px solid var(--ok)}
+.chap{margin-top:8px}
+.chap .st{margin-right:6px}
+.chap .tt{font-family:var(--f-display);font-weight:600;font-size:1.05rem}
+.ratio{font-size:.8rem;color:var(--muted);margin-top:6px}
+.feed{border-left:1px solid var(--rule);padding:12px 0;max-height:430px;overflow-y:auto;min-width:0}
+@media (max-width:860px){.feed{border-left:0;border-top:1px solid var(--rule);max-height:320px}}
+.feed h4{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin:0 14px 8px;font-weight:500}
+.ln{display:grid;grid-template-columns:58px 52px 1fr;gap:8px;padding:5px 14px;font-size:.85rem;opacity:.35;transition:opacity .2s}
+.ln.shown{opacity:1}
+.ln.now{background:var(--accent-soft)}
+.ln .tm{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);padding-top:2px}
+.ln .k{font-family:var(--f-mono);font-size:.66rem;text-transform:uppercase;padding:2px 4px;border-radius:2px;height:fit-content;text-align:center}
+.k-think{background:var(--info-bg);color:var(--info)} .k-look{background:var(--accent-soft);color:var(--accent)} .k-move{background:var(--code-bg);color:var(--ink)}
+.k-code{background:var(--part-bg);color:var(--part)} .k-check{background:var(--ok-bg);color:var(--ok)} .k-note{background:var(--code-bg);color:var(--muted)}
+.ln .tx{min-width:0}
+.ln.key .tx{font-weight:600}
+.ln.key .tx::before{content:"★ ";color:var(--ok)}
+.hl{background:var(--ok-bg);border-left:4px solid var(--ok);padding:10px 14px;margin-bottom:12px;border-radius:2px}
+.hl-k{font-family:var(--f-mono);font-size:.68rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ok)}
+.hl-t{font-family:var(--f-display);font-weight:600;font-size:1.1rem;color:var(--ink)}
+.hl-x{font-size:.88rem;color:var(--ink);margin:2px 0 8px}
+.hl button{font:inherit;font-size:.82rem;background:var(--ok);color:var(--panel);border:0;border-radius:3px;padding:5px 12px;cursor:pointer}
+
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin:16px 0}
+.card{background:var(--panel);border:1px solid var(--rule);padding:14px 16px;border-radius:2px;min-width:0}
+.card h4{font-family:var(--f-display);font-size:1rem;margin:0 0 6px}
+.card p{margin:6px 0;font-size:.92rem}
+.card.before{border-left:4px solid var(--no)} .card.after{border-left:4px solid var(--ok)}
+details{margin:12px 0;background:var(--panel);border:1px solid var(--rule);border-radius:2px;padding:8px 14px}
+summary{cursor:pointer;font-family:var(--f-display);font-weight:600}
+nav.toc{font-family:var(--f-mono);font-size:.78rem;display:flex;flex-wrap:wrap;gap:6px 16px;margin-top:24px}
+nav.toc a{color:var(--muted);text-decoration:none;border-bottom:1px dotted var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;font-size:.78rem;color:var(--muted);margin:6px 0}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;vertical-align:-1px;background:var(--c)}
+@media (prefers-reduced-motion: reduce){.ln{transition:none}}
+@media (max-width:520px){body{font-size:15px} h2{margin-top:48px}}
+</style>
+
+<div class="wrap">
+<header class="col">
+  <div class="eyebrow">RaX reproduction · DexJoCo bimanual Tower of Hanoi · 19–20 Oct 2026</div>
+  <h1>Can RaX be reproduced from what the authors released?</h1>
+  <p class="lede">We took the authors' released code and prompts, ran their agent ourselves on one simulated task (two robot arms finishing a Tower of Hanoi), and tested the program it wrote. This page says what we did at each step, whether each step helped or hurt, and lets you watch what the agent was thinking while the robot moved.</p>
+  <nav class="toc" aria-label="Sections">
+    <a href="#answers">Short answers</a><a href="#steps">What we did</a><a href="#watch">Watch the agent think</a>
+    <a href="#scores">Scores</a><a href="#fix">The insight</a><a href="#perturb">Perturbations</a><a href="#prompts">The prompts</a><a href="#theirs">Ours vs theirs</a><a href="#caveats">Caveats</a>
+  </nav>
+</header>
+
+<section id="answers" aria-label="Short answers">
+<div class="answers">
+  <div class="ans yes"><div class="q">Did they share the prompts?</div><div class="a">Yes, all of them</div><p>Their own script regenerates every prompt byte for byte. The agent gets 2 lines plus a workflow file, a task file and 25 skill files.</p></div>
+  <div class="ans yes"><div class="q">Does their released code run?</div><div class="a">Yes, end to end</div><p>With no code changes, their agent explored, wrote a program and submitted it. The program then ran alone on 150 test layouts.</p></div>
+  <div class="ans mid"><div class="q">Do we get the paper's number?</div><div class="a" id="ans-score">Not in one try</div><p id="ans-score-p">Paper: 100%. Our first session (their protocol): 54.7%. After 6 more practice episodes: see the score chart.</p></div>
+  <div class="ans wait" id="ans-pert-card"><div class="q">Is the program robust?</div><div class="a" id="ans-pert">Test running</div><p id="ans-pert-p">We are re-testing the final program with a moved camera and new lighting, and with heavier or lighter disks.</p></div>
+</div>
+</section>
+
+<!-- STEPS -->
+<section id="steps">
+<h2>What we did, step by step</h2>
+<p class="col">Each row is one thing we did, what it cost, and whether it moved us closer to the paper's result.</p>
+<ol class="steps">
+  <li><div><div class="w">Set up their code on our cluster and checked the prompts</div><div class="d">Their render script reproduces every recorded prompt exactly. One fix was needed: the cluster's sandbox tool (bubblewrap) was too old, so we installed a newer copy. No other change.</div></div><div class="r"><span class="pill ok">Helped</span><span class="big">$0</span>prompts verified</div></li>
+  <li><div><div class="w">Session 1: ran their agent exactly as the paper describes</div><div class="d">Claude Code with Opus 5.5, 8 practice episodes, an empty workspace and 3 photos of the finished tower. The agent wrote a 1,064-line Python program and submitted it after one successful rehearsal.</div></div><div class="r"><span class="pill info">Baseline</span><span class="big">$34</span>2 h 38 m</div></li>
+  <li><div><div class="w">Tested that program on the 150 official layouts</div><div class="d">With no agent help, the program stacked the tower on 82 unseen layouts. Almost all the misses traced back to one step, the right hand's first grasp of the red disk. That gave the agent a single clear thing to improve.</div></div><div class="r"><span class="pill part">Working, not yet reliable</span><span class="big">54.7%</span>paper: 100%</div></li>
+  <li><div><div class="w">Session 2: the same agent kept practising and found the right way to grasp</div><div class="d">With its notes and code and 6 new layouts, it watched its own wrist-camera frames and worked out the better method: <b>grasp with the right hand first, move its spare fingers aside, then grasp with the left</b>. It completed the full tower by hand, then twice with the program alone. <i>The paper starts every session empty, so this goes beyond its protocol.</i></div></div><div class="r"><span class="pill ok">The key step</span><span class="big">+$21</span>3 h 08 m</div></li>
+  <li><div><div class="w">Tested the new program on the same 150 layouts</div><div class="d">The new right-hand grasp held on every layout. The program now matches the paper's level within a few points.</div></div><div class="r"><span class="pill ok">Matches paper closely</span><span class="big" id="step-s2">…</span><span id="step-s2-sub">running</span></div></li>
+  <li><div><div class="w">Changed the scene one thing at a time and re-tested the same program</div><div class="d">Six tests on 75 official layouts each: heavier or lighter disks, a new table texture, new lighting, a moved camera, all three visual changes together, and new disk colours. The paper does not test any of these.</div></div><div class="r" id="step-pert"><span class="pill info">Running</span><span class="big">$0</span>GPU only</div></li>
+</ol>
+</section>
+
+<!-- WATCH -->
+<section id="watch">
+<h2>Watch the agent figure it out</h2>
+<p class="col">This follows the project page's format. Each video shows the robot's three cameras side by side. The log next to it shows what the agent or its program was doing at that moment, taken from its tool calls, messages and notes. Each video opens at its <b>breakthrough</b>: the moment the agent finds the right way to do something, or its program shows it working. Press ▶ to watch from there, or use the chips to see how it got there. While the agent thinks, the simulation is paused, so one second of an agent video can hide minutes of work.</p>
+<div class="legend"><span style="--c:var(--info)">exploring</span><span style="--c:var(--no)">fails</span><span style="--c:var(--part)">fixes</span><span style="--c:var(--ok)">succeeds</span></div>
+<div class="player">
+  <div class="tabs" role="tablist" id="tabs"></div>
+  <div class="pbody">
+    <div class="vid">
+      <div class="hl" id="hl" hidden><div class="hl-k">Breakthrough</div><div class="hl-t" id="hl-t"></div><div class="hl-x" id="hl-x"></div><button type="button" id="hl-go">▶ Play from this moment</button></div>
+      <video id="pv" controls playsinline muted preload="metadata"></video>
+      <div class="camlab"><span>third-person view</span><span>left wrist camera</span><span>right wrist camera</span></div>
+      <div class="dots" id="dots"></div>
+      <div class="chap" id="chap"></div>
+      <div class="ratio" id="ratio"></div>
+    </div>
+    <div class="feed" id="feed" aria-live="polite"><h4>What it is doing</h4><div id="lines"></div></div>
+  </div>
+</div>
+</section>
+
+<!-- SCORES -->
+<section id="scores">
+<h2>Scores at each stage</h2>
+<p class="col">Success rate on DexJoCo's official test layouts. The program runs alone, with no agent and no retries. The first three rows use all 150 layouts; the perturbation rows use the first 75, where the unperturbed session-2 program also scores in the high 90s.</p>
+<div class="chart" id="bars"></div>
+<p class="note col">The paper reports one session per budget, with no repeats and no error bars. Our two numbers come from the same agent with 8 vs 14 practice episodes. The difference between them is the kind of session-to-session spread the paper does not measure.</p>
+</section>
+
+<!-- FIX -->
+<section id="fix">
+<h2>The insight that made it work: one hand at a time</h2>
+<div class="grid2">
+  <div class="card after"><h4>What the agent worked out: right first, then left</h4><p>The right hand grasps the red disk first, then curls its two spare fingers out of the way. Only then does the left hand grasp the yellow disk. The hook shape and the lift test stay the same. To save time, the left arm moves while the right arm moves.</p><p><b>The right-hand grasp now holds on the first try on all 150 test layouts.</b></p></div>
+  <div class="card before"><h4>What it replaced: both hands closing together</h4><p>In session 1 both hooks closed at the same moment. The left hand's straight fingers sat where the right index finger needed to go, so the right grasp often slipped. It failed on the first try on 58 of 150 layouts.</p></div>
+</div>
+<p class="col">The agent found this itself, with no hint from us. In its third new practice episode (video 2 above) it looked at its own wrist-camera frames and saw the two hands' fingers in each other's way. It wrote the cause into its notes, rewrote the controller, and in the next episode (video 3) completed the whole tower with the new method.</p>
+</section>
+
+<!-- PERTURB -->
+<section id="perturb">
+<h2>Perturbations: does the final program survive a changed scene?</h2>
+<p class="col">We changed one thing at a time and re-ran the final program, with no agent and no retries, on the first 75 official test layouts. Every perturbed run therefore has an unperturbed twin. Except for the new disk colours, each change is one of DexJoCo's own randomizers, switched on through a small opt-in hook we added to the harness. The rows go from physics, to appearance, to whether the program understands the task.</p>
+<div class="grid2 col" style="max-width:none">
+  <div class="card after"><h4>What the program handles</h4><p><b>Heavier or lighter disks: 72/75.</b> The new two-step grasp holds whatever the disk weight. <b>A new table texture: 66/75</b>, even a red wood table that could have confused its red-disk detector. <b>New lighting: 53/75</b>, still most of the time. The unperturbed program scores 73/75 on the same layouts.</p></div>
+  <div class="card"><h4>What it was never asked to handle</h4><p><b>A moved camera: 29/75.</b> <b>Camera, lighting and texture all together: 14/75.</b> <b>New disk colours: 0/75.</b> In standard Hanoi practice the camera and colours never change, so the agent tuned colour thresholds for the one view it saw. When the view or the colours change a lot, the program cannot find the disks and does not start. That shows what it practised on, not the limit of the method. See "Giving it a fair chance" below; that test is running now.</p></div>
+</div>
+<div class="scroll"><table id="pert-table">
+<thead><tr><th>What we changed</th><th>Why it could matter</th><th class="num">Unperturbed (same layouts)</th><th class="num">Perturbed</th><th>Twin layouts lost / gained</th><th>Verdict</th></tr></thead>
+<tbody></tbody></table></div>
+<p class="note col" id="pert-note">All six tests finished. They cost GPU time only, no API. "Twin layouts lost" counts layouts the unperturbed program solved but the perturbed run did not.</p>
+
+<h3>Giving it a fair chance</h3>
+<div class="col">
+<p>The visual rows test the program on something it never practised. Before reading them as a weakness of RaX, three facts matter:</p>
+<ol>
+  <li><b>Our runs had no Gemini.</b> The paper gives the agent a vision-language model (Gemini 3.8 Flash, $10 per session) that it can call to locate objects. We had no key for it, so that tool was switched off. That is a deviation from the paper. Our agent also never tried to call it: 0 calls in about 1,000 tool calls.</li>
+  <li><b>The authors' own Hanoi program also uses plain colour-and-depth code</b>, even though Gemini was available to it. So on this task the agent chooses simple perception when it works. That is a sensible choice for the scenes it sees.</li>
+  <li><b>The practice scenes decide what gets learned.</b> Standard Hanoi practice only moves the tower a few centimetres. The agent had no reason to prepare for new lighting, a new camera angle or new colours, and its own "avoid-overfitting" skill cannot catch a variation it never sees.</li>
+</ol>
+<p><b>The fair test is already built into the harness.</b> An <i>adaptation</i> session lets the same agent keep practising on <code>bimanual_hanoi_random</code>, the official variant where camera, lighting and table texture change every episode, ideally with Gemini switched on. The question then becomes: <i>when the agent does see visual variation, does it write perception that survives it?</i> For new disk colours, the fair version is the same idea with colours varied during practice. A program that finds "the medium disk" by size, through depth or a well-phrased Gemini prompt, would pass.</p>
+<p class="note"><b>Status: running now, without Gemini</b> (we have no OpenRouter key). The same agent continues from session 2 with 6 practice episodes on <code>bimanual_hanoi_random</code>. Its briefing says: "This environment is the randomized variant … do not assume earlier poses or colors still hold." Its new program will be scored on 150 randomized layouts and compared with the current program's 14/75 on that setting, then re-tested on each single change above. Until then, the visual rows are marked "not practised yet" rather than as failures of the method.</p>
+</div>
+</section>
+
+<!-- PROMPTS -->
+<section id="prompts">
+<h2>The prompts, exactly</h2>
+<div class="col"><p>The agent's entire first message is two lines. Everything else it reads from files the harness writes into its workspace. All of them are rendered from templates in the repo, and we checked that the rendering matches the authors' recorded fingerprints byte for byte.</p></div>
+<pre>Read AGENTS.md, then MCP_SESSION.md and TASK.md, and call `status`. Follow the AGENTS.md
+workflow.</pre>
+<div class="grid2">
+  <div class="card"><h4>TASK.md</h4><p>"Execute the final two moves of the three-level Tower of Hanoi: move the medium disk from the middle peg to the right peg with the right hand, then move the small disk from the left peg to the right peg with the left hand." It also gives the robot, the cameras, the 1,500-step limit, "no partial credit", and 3 photos of the finished tower.</p></div>
+  <div class="card"><h4>AGENTS.md and 25 skills</h4><p>"Solve the task by hand first … The final evaluation is the formal batch: your submitted code run alone on held-out layouts." The skills cover hand control, depth perception, free dry-runs, and habits such as <i>avoid-overfitting</i> and <i>rehearse-the-controller</i>.</p></div>
+</div>
+<p class="note col">The VLM (Gemini) prompts are not fixed: the agent writes its own if it uses the tool. Neither our Hanoi programs nor the authors' published one call Gemini, so on this task nothing is missing.</p>
+</section>
+
+<!-- THEIRS -->
+<section id="theirs">
+<h2>Ours compared with the authors' Hanoi run</h2>
+<p class="col">The project page's "Tower of Hanoi" case study shows their session as chapters with clips and an activity log (<a href="https://robot-agent-exploration.com/" target="_blank" rel="noopener">robot-agent-exploration.com</a>). Same overall plan, different grasp, and much more practice.</p>
+<div class="scroll"><table>
+<thead><tr><th></th><th>Theirs (project page)</th><th>Ours, session 1</th><th>Ours, session 2</th></tr></thead>
+<tbody>
+<tr><td>Practice episodes</td><td>47 in 2 h 17 m</td><td>8</td><td>8 + 6</td></tr>
+<tr><td>Grasp</td><td>Rolled pinch built from fingertip positions measured with the wrist camera</td><td>Front hook, both hands at once, offsets tuned by trial</td><td>Same hook, right hand first, then left</td></tr>
+<tr><td>Before submitting</td><td>Injected its own errors; 41/41 autonomous runs, 3/3 rehearsals</td><td>1/2 rehearsals passed</td><td>2/2 rehearsals passed</td></tr>
+<tr><td>Formal result</td><td>150/150</td><td>82/150</td><td id="th-s2">…</td></tr>
+</tbody></table></div>
+</section>
+
+<!-- CAVEATS -->
+<section id="caveats">
+<h2>Caveats</h2>
+<ul class="col">
+  <li><b>One task.</b> We tested Hanoi only. The paper covers dozens of tasks across five benchmarks.</li>
+  <li><b>Session 2 departs from the paper.</b> The paper always starts from an empty workspace. Our 54.7% is the faithful number; the second score shows what more practice buys.</li>
+  <li><b>No Gemini in our runs.</b> The paper makes Gemini available ($10 per session). We had no key, so the agent could not use it. On standard Hanoi this changes nothing, since neither our programs nor the authors' published one call it. It may matter for the visual perturbations (see "Giving it a fair chance").</li>
+  <li><b>Small setup differences:</b> Claude Code 2.1.303 instead of 2.1.296, a newer bubblewrap, and an RTX 6000 Ada for session 1.</li>
+  <li><b>Closed models change over time.</b> An exact rerun is impossible even with identical code.</li>
+  <li><b>The activity logs are reconstructed.</b> The agent's private reasoning is not stored. The lines come from its visible messages, tool calls and notes; inside program stages, line timing is approximate.</li>
+  <li><b>Cost:</b> $54.66 in API for both sessions. Testing and perturbations cost GPU time only.</li>
+</ul>
+<p class="note col">All files are indexed in <code>$ROOT/MANIFEST.md</code>.</p>
+</section>
+</div>
+
+<script src="data.js"></script>
+<script>
+(function(){
+  var D = window.REPRO || {feeds:{}, scores:{}, paired:{}};
+  var S = D.scores || {};
+  function pct(s){ if(!s) return null; if(s.percent!=null) return s.percent; return s.done ? Math.round(1000*s.success/s.done)/10 : null; }
+  function label(s){ if(!s||!s.done) return "running"; return s.final ? (s.success+"/"+s.total) : (s.success+"/"+s.done+" so far"); }
+
+  // answers + steps
+  var p2 = pct(S.s2);
+  if(p2!=null){
+    document.getElementById("ans-score").textContent = "Close, with more practice";
+    document.getElementById("ans-score-p").textContent = "Paper: 100%. First session (their protocol): 54.7%. Same agent after 6 more practice episodes: "+p2+"% ("+label(S.s2)+").";
+    document.getElementById("step-s2").textContent = p2+"%";
+    document.getElementById("step-s2-sub").textContent = label(S.s2);
+    document.getElementById("th-s2").textContent = label(S.s2);
+  }
+  function rate(k){ var s=S[k]; return s&&s.done ? Math.round(1000*s.success/s.done)/10 : null; }
+  var pm=rate("mass"), visual=["texture","lighting","camera","rand_full","colors_new"].map(rate).filter(function(x){return x!=null});
+  if(pm!=null || visual.length){
+    var ap=document.getElementById("ans-pert"), card=document.getElementById("ans-pert-card");
+    var physOk = pm!=null && pm>=85, visBad = visual.length && Math.min.apply(null,visual) < 50;
+    ap.textContent = physOk && visBad ? "To physics, yes; to looks, not yet" : physOk ? "So far, yes" : visBad ? "Not yet to visual changes" : "Mixed";
+    card.className = "ans " + (physOk && !visBad ? "yes" : "mid");
+    var bits=[]; if(pm!=null) bits.push("heavier/lighter disks "+pm+"%");
+    [["texture","new table texture"],["lighting","new lighting"],["camera","moved camera"],["colors_new","new disk colours"]].forEach(function(x){var r=rate(x[0]); if(r!=null) bits.push(x[1]+" "+r+"%");});
+    document.getElementById("ans-pert-p").textContent = "Same program, same layouts: "+bits.join(", ")+". The visual changes were never part of its practice, and Gemini was off in our runs; a fair test is described below.";
+    var allDone=["mass","texture","lighting","camera","rand_full","colors_new"].every(function(k){return S[k]&&S[k].final});
+    document.getElementById("step-pert").innerHTML = '<span class="pill '+(physOk?"ok":"part")+'">'+(physOk&&visBad?"Physics yes, looks not yet":physOk?"Holds up":"Mixed")+'</span><span class="big">6 tests</span>'+(allDone?"all finished":"some running");
+  }
+
+  // score bars (perturbations: first 75 official layouts)
+  var bars=[["Paper (authors)", "one session, budget 8", 100, "var(--muted)", true],
+            ["Ours · session 1", "their protocol, 8 episodes", pct(S.s1), "var(--no)", S.s1&&S.s1.final],
+            ["Ours · session 2", "same agent, +6 episodes", p2, "var(--ok)", S.s2&&S.s2.final],
+            ["+ heavier/lighter disks", "physics", pm, "var(--ok)", S.mass&&S.mass.final],
+            ["+ new table texture", "appearance", rate("texture"), "var(--part)", S.texture&&S.texture.final],
+            ["+ new lighting", "appearance", rate("lighting"), "var(--part)", S.lighting&&S.lighting.final],
+            ["+ moved camera", "viewpoint", rate("camera"), "var(--part)", S.camera&&S.camera.final],
+            ["+ camera, lighting and texture together", "DexJoCo \"random\" setting", rate("rand_full"), "var(--part)", S.rand_full&&S.rand_full.final],
+            ["+ new disk colours", "task understanding", rate("colors_new"), "var(--no)", S.colors_new&&S.colors_new.final]];
+  var bh=document.getElementById("bars");
+  bars.forEach(function(b){
+    var row=document.createElement("div");row.className="brow";
+    var v = b[2]==null ? "…" : b[2]+"%"+(b[4]?"":"*");
+    row.innerHTML='<div class="lab"></div><div class="track"><div class="fill"></div></div><div class="val"></div>';
+    row.querySelector(".lab").innerHTML = b[0]+"<small>"+b[1]+"</small>";
+    row.querySelector(".fill").style.width=(b[2]||0)+"%"; row.querySelector(".fill").style.background=b[3];
+    row.querySelector(".val").textContent=v; bh.appendChild(row);
+  });
+  var star=document.createElement("p");star.className="note";star.textContent="* still running; the rate is over the episodes finished so far.";bh.appendChild(star);
+
+  // perturbation table: each condition on official layouts 0-74, against the unperturbed program on the same layouts
+  var P=D.paired||{}, BS=D.base_on_subset||{}, tb=document.querySelector("#pert-table tbody");
+  var PERTS=[
+   ["mass","Physics","Each disk 25% lighter to 25% heavier (DexJoCo's built-in option)","The grip squeezes by pushing fingers past the disk; a heavier disk could slip."],
+   ["texture","Appearance","Random table surface (DexJoCo's own texture set, e.g. red wood)","The board is found from depth, but a reddish table could confuse the red-disk detector."],
+   ["lighting","Appearance","Random light position, direction, colour and brightness (DexJoCo's own)","Disks are found with fixed colour thresholds; light shifts the colours the camera sees."],
+   ["camera","Viewpoint","Third-person camera moved to one of DexJoCo's preset viewpoints","Calibration stays correct, but disks and pegs look different, or are partly hidden, from the side."],
+   ["rand_full","Appearance + viewpoint","Camera, lighting and table texture all randomized together (DexJoCo's official \"random\" setting)","The combination of the three rows above."],
+   ["colors_new","Task understanding","Disks recoloured orange, green and purple; sizes unchanged","The task names the disks by size (\"medium\", \"small\"), not colour. A program that understood the task would not care."]];
+  function verdictOf(p,b,kind){ if(p==null) return '<span class="pill info">Running</span>'; var d=b-p;
+    if(d<=5) return '<span class="pill ok">Handles it</span>';
+    if(kind!=="Physics") return '<span class="pill part">Not practised yet</span>';
+    return d>15?'<span class="pill no">Hurts</span>':'<span class="pill part">Hurts a little</span>'; }
+  PERTS.forEach(function(r){
+    var s=S[r[0]]||{}, pp=P[r[0]]||{}, bs=BS[r[0]]||{}, p=s.done?Math.round(1000*s.success/s.done)/10:null;
+    var b = bs.n ? Math.round(1000*bs.success/bs.n)/10 : null;
+    var tr=document.createElement("tr");
+    tr.innerHTML='<td><b></b><br><span class="note"></span></td><td></td><td class="num">'+(b==null?"…":b+"%")+'</td><td class="num">'+(p==null?"…":p+"% <span class=note>("+s.success+"/"+s.done+(s.final?"":", running")+")</span>")+'</td><td>'+(pp.compared? (pp.lost+" lost, "+pp.gained+" gained") : "…")+'</td><td>'+verdictOf(p,b==null?96.7:b,r[1])+'</td>';
+    tr.querySelector("b").textContent=r[2]; tr.querySelector(".note").textContent=r[1]; tr.children[1].textContent=r[3]; tb.appendChild(tr);
+  });
+
+  // synced player
+  var order=[["s1_explore_e2","1 · Hook grasp works","session 1, episode 2"],["s2_explore_n3","2 · Spots the cause","session 2, episode N3"],["s2_explore_n4","3 · First full tower","session 2, episode N4"],["s2_rehearsal_final","4 · Program alone","final rehearsal"],["s2_formal_108","5 · Unseen test layout","program alone, success"]];
+  if(!D.feeds.s1_explore_e2 && D.feeds.s1_explore_e1) order.unshift(["s1_explore_e1","Session 1 · episode 1","agent drives the robot"]);
+  var tabs=document.getElementById("tabs"), v=document.getElementById("pv"), linesEl=document.getElementById("lines"), dots=document.getElementById("dots"), chap=document.getElementById("chap"), ratio=document.getElementById("ratio");
+  var cur=null, rows=[];
+  function mmss(t){t=Math.max(0,t);return Math.floor(t/60)+":"+("0"+Math.floor(t%60)).slice(-2)}
+  function load(id){
+    var f=D.feeds[id]; if(!f) return; cur=f;
+    Array.prototype.forEach.call(tabs.children,function(b){b.setAttribute("aria-selected", b.dataset.id===id?"true":"false")});
+    v.src=f.clip; v.load();
+    linesEl.innerHTML=""; rows=[];
+    f.lines.forEach(function(l){
+      var d=document.createElement("div"); d.className="ln";
+      d.innerHTML='<span class="tm"></span><span class="k"></span><span class="tx"></span>';
+      d.querySelector(".tm").textContent=(l.wall||"").slice(0,5)||mmss(l.t);
+      var k=d.querySelector(".k"); k.textContent=l.kind; k.className="k k-"+l.kind;
+      d.querySelector(".tx").textContent=l.text+(l.approx?" (≈)":"");
+      if(l.key) d.classList.add("key");
+      d.addEventListener("click",function(){v.currentTime=l.t+0.05;});
+      linesEl.appendChild(d); rows.push([l.t,d]);
+    });
+    dots.innerHTML="";
+    (f.chapters||[]).forEach(function(c,i){
+      var b=document.createElement("button"); b.className=c.status; b.textContent=(i+1)+" · "+c.title;
+      b.addEventListener("click",function(){v.currentTime=c.t+0.05; v.play().catch(function(){});});
+      dots.appendChild(b);
+    });
+    var hl=document.getElementById("hl"), h=f.highlight;
+    if(h){ hl.hidden=false; document.getElementById("hl-t").textContent=h.title; document.getElementById("hl-x").textContent=h.text||"";
+      var start=Math.max(0,h.t-(id.indexOf("explore")>=0?2:6));
+      if(id.indexOf("explore")>=0) v.addEventListener("loadedmetadata",function once(){ v.removeEventListener("loadedmetadata",once); v.currentTime=start; sync(); });
+      document.getElementById("hl-go").onclick=function(){ v.currentTime=start; v.play().catch(function(){}); };
+    } else { hl.hidden=true; }
+    var wm=f.wall_minutes, dur=f.duration_s;
+    ratio.textContent = f.title + " · video "+Math.round(dur)+" s · real time "+(wm>=1? Math.round(wm)+" min" : Math.round(wm*60)+" s")+(f.cost_usd? " · API cost $"+f.cost_usd.toFixed(2) : " · no API cost (program only)") + (wm/ (dur/60) > 2 ? " · 1 s of video ≈ "+(wm*60/dur/60).toFixed(1)+" min of agent work" : "");
+    sync();
+  }
+  function sync(){
+    if(!cur) return; var t=v.currentTime||0, last=null;
+    rows.forEach(function(r){ var on=r[0]<=t+0.01; r[1].classList.toggle("shown",on); r[1].classList.remove("now"); if(on) last=r[1]; });
+    if(last){ last.classList.add("now"); if(!v.paused){ var fe=document.getElementById("feed"); var top=last.offsetTop-fe.offsetTop-fe.clientHeight/2; fe.scrollTop=Math.max(0,top);} }
+    var ch=(cur.chapters||[]), ci=0; ch.forEach(function(c,i){ if(c.t<=t+0.01) ci=i; });
+    Array.prototype.forEach.call(dots.children,function(b,i){b.classList.toggle("cur",i===ci)});
+    var c=ch[ci]; if(c){ chap.innerHTML='<span class="pill st '+({explore:"info",fail:"no",fix:"part",success:"ok"}[c.status]||"info")+'"></span><span class="tt"></span>'; chap.querySelector(".st").textContent=c.status; chap.querySelector(".tt").textContent=c.title; }
+  }
+  order.forEach(function(o){ if(!D.feeds[o[0]]) return;
+    var b=document.createElement("button"); b.setAttribute("role","tab"); b.dataset.id=o[0];
+    b.innerHTML=o[1]+"<small></small>"; b.querySelector("small").textContent=o[2];
+    b.addEventListener("click",function(){load(o[0])}); tabs.appendChild(b); });
+  v.addEventListener("timeupdate",sync); v.addEventListener("seeked",sync);
+  if(order.length) load(order[0][0]);
+})();
+</script>

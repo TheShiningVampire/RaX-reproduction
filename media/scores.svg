@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 402" width="900" height="402" font-family="Helvetica, Arial, sans-serif">
+<rect width="900" height="402" fill="#ffffff"/>
+<text x="16" y="28" font-size="18" font-weight="700" fill="#15212b">Success on DexJoCo Tower of Hanoi (official test layouts)</text>
+<text x="16" y="46" font-size="12" fill="#566573">Program runs alone, no agent, no retries. Rows 1–3: 150 layouts. Perturbation rows: layouts 0–74 (unperturbed: 73/75).</text>
+<line x1="330.0" y1="50" x2="330.0" y2="368" stroke="#e3e8ec"/>
+<text x="330.0" y="384" font-size="11" fill="#566573" text-anchor="middle">0%</text>
+<line x1="445.0" y1="50" x2="445.0" y2="368" stroke="#e3e8ec"/>
+<text x="445.0" y="384" font-size="11" fill="#566573" text-anchor="middle">25%</text>
+<line x1="560.0" y1="50" x2="560.0" y2="368" stroke="#e3e8ec"/>
+<text x="560.0" y="384" font-size="11" fill="#566573" text-anchor="middle">50%</text>
+<line x1="675.0" y1="50" x2="675.0" y2="368" stroke="#e3e8ec"/>
+<text x="675.0" y="384" font-size="11" fill="#566573" text-anchor="middle">75%</text>
+<line x1="790.0" y1="50" x2="790.0" y2="368" stroke="#e3e8ec"/>
+<text x="790.0" y="384" font-size="11" fill="#566573" text-anchor="middle">100%</text>
+<text x="320" y="73" font-size="13" fill="#15212b" text-anchor="end">Paper (authors), budget 8</text>
+<rect x="330" y="60" width="460.0" height="20" rx="2" fill="#8a96a3"/>
+<text x="796.0" y="75" font-size="12" fill="#15212b">100%</text>
+<text x="320" y="107" font-size="13" fill="#15212b" text-anchor="end">Ours · session 1 (paper protocol, 8 episodes)</text>
+<rect x="330" y="94" width="251.6" height="20" rx="2" fill="#c2554b"/>
+<text x="587.6" y="109" font-size="12" fill="#15212b">54.7%  (82/150)</text>
+<text x="320" y="141" font-size="13" fill="#15212b" text-anchor="end">Ours · session 2 (same agent, +6 episodes)</text>
+<rect x="330" y="128" width="444.8" height="20" rx="2" fill="#2e8b57"/>
+<text x="780.8" y="143" font-size="12" fill="#15212b">96.7%  (145/150)</text>
+<line x1="16" y1="154" x2="884" y2="154" stroke="#15212b" stroke-dasharray="3 3"/>
+<text x="320" y="175" font-size="13" fill="#15212b" text-anchor="end">+ Heavier/lighter disks (±25%)</text>
+<rect x="330" y="162" width="441.6" height="20" rx="2" fill="#2e8b57"/>
+<text x="777.6" y="177" font-size="12" fill="#15212b">96%  (72/75)</text>
+<text x="320" y="209" font-size="13" fill="#15212b" text-anchor="end">+ New table texture</text>
+<rect x="330" y="196" width="404.8" height="20" rx="2" fill="#d9962b"/>
+<text x="740.8" y="211" font-size="12" fill="#15212b">88%  (66/75)</text>
+<text x="320" y="243" font-size="13" fill="#15212b" text-anchor="end">+ New lighting</text>
+<rect x="330" y="230" width="325.2" height="20" rx="2" fill="#d9962b"/>
+<text x="661.2" y="245" font-size="12" fill="#15212b">70.7%  (53/75)</text>
+<text x="320" y="277" font-size="13" fill="#15212b" text-anchor="end">+ Moved camera</text>
+<rect x="330" y="264" width="178.0" height="20" rx="2" fill="#d9962b"/>
+<text x="514.0" y="279" font-size="12" fill="#15212b">38.7%  (29/75)</text>
+<text x="320" y="311" font-size="13" fill="#15212b" text-anchor="end">+ Camera + lighting + texture</text>
+<rect x="330" y="298" width="86.0" height="20" rx="2" fill="#d9962b"/>
+<text x="422.0" y="313" font-size="12" fill="#15212b">18.7%  (14/75)</text>
+<text x="320" y="345" font-size="13" fill="#15212b" text-anchor="end">+ New disk colours</text>
+<rect x="330" y="332" width="1.5" height="20" rx="2" fill="#c2554b"/>
+<text x="336.0" y="347" font-size="12" fill="#15212b">0%  (0/75)</text>
+</svg>

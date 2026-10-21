@@ -1,0 +1,98 @@
+{
+  "task": "DexJoCo bimanual_hanoi",
+  "formal": {
+    "s1": {
+      "success": 82,
+      "episodes": 150,
+      "percent": 54.7,
+      "per_seed_percent": [
+        56,
+        54,
+        54
+      ]
+    },
+    "s2": {
+      "success": 145,
+      "episodes": 150,
+      "percent": 96.7,
+      "per_seed_percent": [
+        96,
+        96,
+        98
+      ]
+    }
+  },
+  "perturbations_layouts_0_74": {
+    "mass": {
+      "label": "Heavier/lighter disks (\u00b125%)",
+      "kind": "physics",
+      "success": 72,
+      "episodes": 75,
+      "percent": 96.0,
+      "unperturbed_same_layouts": "73/75",
+      "twins_lost": 3,
+      "twins_gained": 2,
+      "final": true
+    },
+    "texture": {
+      "label": "New table texture",
+      "kind": "appearance",
+      "success": 66,
+      "episodes": 75,
+      "percent": 88.0,
+      "unperturbed_same_layouts": "73/75",
+      "twins_lost": 7,
+      "twins_gained": 0,
+      "final": true
+    },
+    "lighting": {
+      "label": "New lighting",
+      "kind": "appearance",
+      "success": 53,
+      "episodes": 75,
+      "percent": 70.7,
+      "unperturbed_same_layouts": "73/75",
+      "twins_lost": 21,
+      "twins_gained": 1,
+      "final": true
+    },
+    "camera": {
+      "label": "Moved camera",
+      "kind": "viewpoint",
+      "success": 29,
+      "episodes": 75,
+      "percent": 38.7,
+      "unperturbed_same_layouts": "73/75",
+      "twins_lost": 45,
+      "twins_gained": 1,
+      "final": true
+    },
+    "rand_full": {
+      "label": "Camera + lighting + texture",
+      "kind": "appearance",
+      "success": 14,
+      "episodes": 75,
+      "percent": 18.7,
+      "unperturbed_same_layouts": "73/75",
+      "twins_lost": 60,
+      "twins_gained": 1,
+      "final": true
+    },
+    "colors_new": {
+      "label": "New disk colours",
+      "kind": "task understanding",
+      "success": 0,
+      "episodes": 75,
+      "percent": 0.0,
+      "unperturbed_same_layouts": "73/75",
+      "twins_lost": 73,
+      "twins_gained": 0,
+      "final": true
+    }
+  },
+  "api_cost_usd": {
+    "s1": 34.08,
+    "s2_new": 20.59,
+    "total": 54.66
+  }
+}
